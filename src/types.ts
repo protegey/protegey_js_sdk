@@ -87,6 +87,64 @@ export interface StartKycSessionResult {
   url: string;
 }
 
+/** Same shape as the outbound KYC webhook payload, minus eventId — use this to poll a session's
+ * current status as a fallback: webhook delivery is best-effort (one retry, no queue), so this is
+ * the only way to be certain of a session's status if a delivery is ever lost. */
+export interface KycSessionStatus {
+  sessionId: string;
+  externalUserId: string | null;
+  status: string;
+  decision: Record<string, unknown> | null;
+}
+
+/** Aggregated timing/gesture metadata only — never raw keystrokes/content. All fields optional:
+ * send whatever your app captured for this session. Mirrors the backend's KeystrokeMetricsDto. */
+export interface KeystrokeMetrics {
+  avgHoldTimeMs?: number;
+  avgInterKeyLatencyMs?: number;
+  typingSpeedCharsPerSec?: number;
+  errorRate?: number;
+}
+
+export interface TouchMetrics {
+  avgTapPressure?: number;
+  avgSwipeVelocity?: number;
+  scrollBehaviorScore?: number;
+  mouseAcceleration?: number;
+}
+
+export interface NavigationMetrics {
+  /** Ordered screen/action identifiers for this session's task, e.g. ["login","dashboard","transfer","confirm"]. */
+  screenSequence?: string[];
+}
+
+export interface SessionMetrics {
+  loginHourBucket?: number;
+  loginDayOfWeek?: number;
+  sessionDurationMs?: number;
+}
+
+export interface ReportBehavioralEventInput {
+  externalCustomerId: string;
+  /** Groups the metrics you send across one task/session — reuse the same id across calls for the same session. */
+  sessionId: string;
+  keystroke?: KeystrokeMetrics;
+  touch?: TouchMetrics;
+  navigation?: NavigationMetrics;
+  session?: SessionMetrics;
+}
+
+export type BehavioralConfidenceTier = 'low' | 'medium' | 'high';
+
+export interface ReportBehavioralEventResult {
+  /** "learning": not enough history for this customer yet — no score, keep sending sessions. */
+  status: 'learning' | 'scored';
+  deviationScore: number;
+  confidenceTier: BehavioralConfidenceTier | null;
+  stepUpRecommended: boolean;
+  escalatedAlertId: string | null;
+}
+
 export interface ProtegeyOptions {
   /** Your partner API key — sent as the `x-api-key` header on every request. */
   apiKey: string;

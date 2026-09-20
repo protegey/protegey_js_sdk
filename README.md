@@ -1,6 +1,6 @@
 # @protegey/sdk
 
-Official Protegey SDK for JavaScript/TypeScript. One package for Node.js, the browser (React, Angular, plain JS), and React Native — device intelligence, transaction reporting and identity verification, called directly from your app with your own API key.
+Official Protegey SDK for JavaScript/TypeScript. One package for Node.js, the browser (React, Angular, plain JS), and React Native — device intelligence, transaction reporting, identity verification and behavioral biometrics, called directly from your app with your own API key.
 
 ## Install
 
@@ -49,6 +49,21 @@ const result = await protegey.transactions.report({
 const { sessionId, url: verificationUrl } = await protegey.kyc.startSession({
   externalUserId: "cust-9981",
 });
+
+// Polling fallback — webhook delivery is best-effort (one retry, no queue), so use this if
+// you're not sure a delivery ever arrived, or just want to double-check a session's status.
+const current = await protegey.kyc.getSession(sessionId);
+
+// Behavioral biometrics — aggregated keystroke/touch/navigation metadata only, never raw content
+const behavioral = await protegey.behavioral.report({
+  externalCustomerId: "cust-9981",
+  sessionId: "sess-20260115-01",
+  keystroke: { avgInterKeyLatencyMs: 145, typingSpeedCharsPerSec: 4.2, errorRate: 0.02 },
+  touch: { avgSwipeVelocity: 22, scrollBehaviorScore: 0.8 },
+  navigation: { screenSequence: ["login", "dashboard", "transfer", "confirm"] },
+});
+// behavioral.status === "learning" for the first few sessions of any given customer — expected, not an error.
+// Once scored: behavioral.stepUpRecommended tells you whether to challenge this user yourself (OTP, biometric, ...).
 ```
 
 ## `baseUrl` — no default, on purpose
@@ -74,10 +89,11 @@ await protegey.device.identify({ visitorId: myStoredDeviceId, externalCustomerId
 
 - `protegey.device.identify()` — device/session intelligence.
 - `protegey.transactions.report()` — transaction monitoring.
-- `protegey.kyc.startSession()` — identity verification.
+- `protegey.kyc.startSession()` / `protegey.kyc.getSession()` — identity verification + webhook-polling fallback.
+- `protegey.behavioral.report()` — behavioral biometrics (keystroke/touch/navigation/session).
 
-More of the Protegey API surface (behavioral events, shared-signal checks, ...) will be added as
-additional namespaces without breaking this shape.
+More of the Protegey API surface (shared-signal checks, ...) will be added as additional
+namespaces without breaking this shape.
 
 ## Security note
 

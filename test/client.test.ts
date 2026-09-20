@@ -27,6 +27,21 @@ describe('ProtegeyHttpClient', () => {
     expect(headers.Authorization).toBeUndefined();
   });
 
+  it('sends a GET request with the api key header and no body', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ status: 'Approved' }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const client = new ProtegeyHttpClient('secret-key', 'https://api.example.com');
+    const result = await client.get('/foo/bar');
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://api.example.com/foo/bar');
+    expect(init.method).toBe('GET');
+    expect(init.body).toBeUndefined();
+    expect((init.headers as Record<string, string>)['x-api-key']).toBe('secret-key');
+    expect(result).toEqual({ status: 'Approved' });
+  });
+
   it('strips a trailing slash from a custom baseUrl', async () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);

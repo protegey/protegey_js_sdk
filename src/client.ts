@@ -40,7 +40,20 @@ export class ProtegeyHttpClient {
       },
       body: JSON.stringify(body),
     });
+    return this.parseResponse<T>(response);
+  }
 
+  async get<T>(path: string): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      method: 'GET',
+      headers: {
+        'x-api-key': this.apiKey,
+      },
+    });
+    return this.parseResponse<T>(response);
+  }
+
+  private async parseResponse<T>(response: Response): Promise<T> {
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
