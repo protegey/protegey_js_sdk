@@ -7,7 +7,11 @@ describe('ProtegeyHttpClient', () => {
   });
 
   it('throws when constructed without an apiKey', () => {
-    expect(() => new ProtegeyHttpClient('')).toThrow(/apiKey/);
+    expect(() => new ProtegeyHttpClient('', 'https://api.example.com')).toThrow(/apiKey/);
+  });
+
+  it('throws when constructed without a baseUrl — no silent default, ever', () => {
+    expect(() => new ProtegeyHttpClient('key', '')).toThrow(/baseUrl/);
   });
 
   it('sends the api key as the x-api-key header, never Authorization', async () => {
@@ -40,7 +44,7 @@ describe('ProtegeyHttpClient', () => {
       vi.fn(async () => new Response(JSON.stringify({ message: 'Insufficient permissions' }), { status: 403 })),
     );
 
-    const client = new ProtegeyHttpClient('key');
+    const client = new ProtegeyHttpClient('key', 'https://api.example.com');
     await expect(client.post('/foo', {})).rejects.toMatchObject({ status: 403, message: 'Insufficient permissions' });
   });
 
@@ -50,7 +54,7 @@ describe('ProtegeyHttpClient', () => {
       vi.fn(async () => new Response(JSON.stringify({ message: ['amount must be positive', 'currency required'] }), { status: 400 })),
     );
 
-    const client = new ProtegeyHttpClient('key');
+    const client = new ProtegeyHttpClient('key', 'https://api.example.com');
     await expect(client.post('/foo', {})).rejects.toThrow('amount must be positive, currency required');
   });
 
@@ -60,7 +64,7 @@ describe('ProtegeyHttpClient', () => {
       vi.fn(async () => new Response('not json', { status: 500, statusText: 'Internal Server Error' })),
     );
 
-    const client = new ProtegeyHttpClient('key');
+    const client = new ProtegeyHttpClient('key', 'https://api.example.com');
     await expect(client.post('/foo', {})).rejects.toThrow('Internal Server Error');
   });
 });

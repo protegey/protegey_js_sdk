@@ -8,10 +8,13 @@ import type { ProtegeyOptions } from './types.js';
  * identically from Node.js, the browser (React, Angular, plain JS) and React Native.
  *
  * ```ts
- * const protegey = new Protegey({ apiKey: 'YOUR_API_KEY' });
+ * const protegey = new Protegey({ apiKey: 'YOUR_API_KEY', baseUrl: 'https://api.protegey.com' });
  * const { visitorId, action } = await protegey.device.identify({ externalCustomerId: 'cust-1' });
  * await protegey.transactions.report({ externalTransactionId: 'tx-1', ... });
  * ```
+ *
+ * `baseUrl` has no default — confirm the current value with Protegey (it may differ between
+ * environments and can change independently of this package).
  *
  * Namespaced (`.device`, `.transactions`) so more of the partner-api surface can be added later
  * (behavioral events, shared-signal checks, ...) without breaking this shape.

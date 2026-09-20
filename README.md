@@ -4,16 +4,27 @@ Official Protegey SDK for JavaScript/TypeScript. One package for Node.js, the br
 
 ## Install
 
+Not yet published to npm — install directly from GitHub for now:
+
+```bash
+npm install git+https://github.com/protegey/protegey_js_sdk.git
+# or pin a specific commit/tag: git+https://github.com/protegey/protegey_js_sdk.git#v0.1.0
+```
+
+Once published, this becomes:
+
 ```bash
 npm install @protegey/sdk
 ```
+
+Source: [github.com/protegey/protegey_js_sdk](https://github.com/protegey/protegey_js_sdk)
 
 ## Usage
 
 ```ts
 import { Protegey } from "@protegey/sdk";
 
-const protegey = new Protegey({ apiKey: "YOUR_API_KEY" });
+const protegey = new Protegey({ apiKey: "YOUR_API_KEY", baseUrl: "https://api.protegey.com" });
 
 // Device intelligence — call on login / session start.
 // In a browser, this computes a real device fingerprint automatically.
@@ -34,6 +45,14 @@ const result = await protegey.transactions.report({
   visitorId, // fold the same device signal into this transaction's decision
 });
 ```
+
+## `baseUrl` — no default, on purpose
+
+This package ships inside apps (especially mobile) that can't be force-updated the moment
+Protegey's own API domain changes. Baking in a guess would risk every already-shipped app
+silently talking to a stale host later — so `baseUrl` is required, with no fallback. Confirm the
+current value with Protegey before you ship (it can differ between environments and change
+independently of this package's version).
 
 ## Outside the browser (Node.js, React Native)
 

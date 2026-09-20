@@ -79,6 +79,8 @@ export interface ReportTransactionResult {
 export interface ProtegeyOptions {
   /** Your partner API key — sent as the `x-api-key` header on every request. */
   apiKey: string;
-  /** Override the API base URL — defaults to Protegey's production API. */
-  baseUrl?: string;
+  /** Your Protegey API environment, e.g. "https://api.protegey.com". No default on purpose — see
+   * ProtegeyHttpClient's doc comment for why. Confirm the current value with Protegey before
+   * shipping to production; it can change independently of this package's version. */
+  baseUrl: string;
 }
