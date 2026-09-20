@@ -1,6 +1,6 @@
 # @protegey/sdk
 
-Official Protegey SDK for JavaScript/TypeScript. One package for Node.js, the browser (React, Angular, plain JS), and React Native — device intelligence and transaction reporting, called directly from your app with your own API key.
+Official Protegey SDK for JavaScript/TypeScript. One package for Node.js, the browser (React, Angular, plain JS), and React Native — device intelligence, transaction reporting and identity verification, called directly from your app with your own API key.
 
 ## Install
 
@@ -44,6 +44,11 @@ const result = await protegey.transactions.report({
   isCash: true,
   visitorId, // fold the same device signal into this transaction's decision
 });
+
+// Identity verification — no curl needed, the SDK starts the session and hands back the link
+const { sessionId, url: verificationUrl } = await protegey.kyc.startSession({
+  externalUserId: "cust-9981",
+});
 ```
 
 ## `baseUrl` — no default, on purpose
@@ -69,6 +74,7 @@ await protegey.device.identify({ visitorId: myStoredDeviceId, externalCustomerId
 
 - `protegey.device.identify()` — device/session intelligence.
 - `protegey.transactions.report()` — transaction monitoring.
+- `protegey.kyc.startSession()` — identity verification.
 
 More of the Protegey API surface (behavioral events, shared-signal checks, ...) will be added as
 additional namespaces without breaking this shape.

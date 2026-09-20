@@ -76,6 +76,17 @@ export interface ReportTransactionResult {
   deviceAction: DeviceAction | null;
 }
 
+export interface StartKycSessionInput {
+  /** Your own identifier for the end user going through verification. */
+  externalUserId: string;
+}
+
+export interface StartKycSessionResult {
+  sessionId: string;
+  /** Hosted verification link — send it to your user however you like (SMS, email, in-app). */
+  url: string;
+}
+
 export interface ProtegeyOptions {
   /** Your partner API key — sent as the `x-api-key` header on every request. */
   apiKey: string;
