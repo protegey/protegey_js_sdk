@@ -1,0 +1,48 @@
+{
+  "name": "@protegey/sdk",
+  "version": "0.1.0",
+  "description": "Official Protegey SDK for JavaScript/TypeScript — device intelligence and transaction reporting from Node.js, the browser, React, Angular and React Native.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/rename-cjs.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@thumbmarkjs/thumbmarkjs": "^0.15.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "keywords": [
+    "protegey",
+    "fraud",
+    "device-intelligence",
+    "fingerprint",
+    "aml"
+  ],
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/protegey/protegey-sdk-js"
+  }
+}
