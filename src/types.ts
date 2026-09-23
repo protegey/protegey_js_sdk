@@ -12,6 +12,17 @@ export interface DeviceAttributes {
   appVersion?: string;
   isRooted?: boolean;
   isEmulator?: boolean;
+  // ── Tier 1/2 enrichment — web-realistic subset only ────────────────────────────────────────
+  // manufacturer, storage, battery and VPN status are deliberately NOT collected here: none of
+  // them are reliably (or, for battery, even currently) available from a browser — see
+  // fingerprint.ts for exactly why each field below is (or isn't) populated per browser.
+  /** Best-effort, Chromium-only (Network Information API) — undefined on Safari/Firefox. */
+  connectionType?: string;
+  devicePixelRatio?: number;
+  /** navigator.hardwareConcurrency — logical CPU cores, standard in every modern browser. */
+  cpuCores?: number;
+  /** From navigator.deviceMemory (GB, rounded down) — Chromium-only, undefined elsewhere. */
+  totalMemoryMb?: number;
 }
 
 export type DeviceAction = 'allow' | 'soft_challenge' | 'hard_challenge' | 'block';

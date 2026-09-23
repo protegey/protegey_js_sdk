@@ -25,9 +25,17 @@ export async function computeFingerprint(): Promise<{ visitorId: string; attribu
   };
 }
 
+/** navigator.connection is Chromium-only and untyped in lib.dom.d.ts — accessed defensively. */
+interface NetworkInformationLike {
+  type?: string;
+  effectiveType?: string;
+}
+
 async function computeBrowserFingerprint(): Promise<{ visitorId: string; attributes: DeviceAttributes }> {
   const { getFingerprint } = await import('@thumbmarkjs/thumbmarkjs');
   const visitorId = await getFingerprint();
+
+  const nav = navigator as Navigator & { connection?: NetworkInformationLike; deviceMemory?: number };
 
   const attributes: DeviceAttributes = {
     platform: 'Web',
@@ -37,6 +45,10 @@ async function computeBrowserFingerprint(): Promise<{ visitorId: string; attribu
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     language: navigator.language,
     isEmulator: detectHeadlessOrAutomation(),
+    devicePixelRatio: window.devicePixelRatio,
+    cpuCores: navigator.hardwareConcurrency,
+    connectionType: nav.connection?.type ?? nav.connection?.effectiveType,
+    totalMemoryMb: typeof nav.deviceMemory === 'number' ? nav.deviceMemory * 1024 : undefined,
   };
 
   return { visitorId, attributes };
