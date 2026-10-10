@@ -1,3 +1,7 @@
+## 0.2.0
+
+- `ReportTransactionInput` gains `channel` (new `TransactionChannel` type: branch/atm/pos/online/mobile_app/ussd/agent/api/call_center), `counterpartyInstitutionCode`, and `counterpartyCountry` — lets Pan Studio rules target bank-wire and cross-border scenarios, not just mobile-money structuring.
+
 ## 0.1.0
 
 - Initial release.
