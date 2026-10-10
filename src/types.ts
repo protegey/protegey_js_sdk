@@ -51,6 +51,10 @@ export interface IdentifyResult {
 
 export type TransactionDirection = 'DEBIT' | 'CREDIT';
 
+/** How the transaction was initiated — lets a Pan Studio rule distinguish e.g. a USSD cash-out
+ * from an API-initiated transfer. Omit if not meaningful for your integration. */
+export type TransactionChannel = 'branch' | 'atm' | 'pos' | 'online' | 'mobile_app' | 'ussd' | 'agent' | 'api' | 'call_center';
+
 export interface ReportTransactionInput {
   externalTransactionId: string;
   externalCustomerId: string;
@@ -59,6 +63,14 @@ export interface ReportTransactionInput {
   currency?: string;
   transactionType: string;
   counterpartyExternalId?: string;
+  /** How this transaction was initiated — see TransactionChannel. */
+  channel?: TransactionChannel;
+  /** SWIFT/BIC or a local bank/MNO code for the counterparty's institution — bank-wire and
+   * cross-institution mobile-money scenarios. Free-form: no single format fits every network. */
+  counterpartyInstitutionCode?: string;
+  /** The counterparty's country (ISO 3166-1 recommended, not enforced) — compare against your
+   * customer's own `country` in a Pan Studio rule to flag cross-border activity. */
+  counterpartyCountry?: string;
   isCash?: boolean;
   /** Defaults to now. */
   occurredAt?: string;
