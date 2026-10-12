@@ -82,6 +82,16 @@ export interface ReportTransactionInput {
   visitorId?: string;
   deviceAttributes?: DeviceAttributes;
   devicePhoneNumber?: string;
+  /** When this customer's login password was last changed, if you track it — lets a Pan Studio
+   * rule flag a large transaction shortly after a credential change (a classic account-takeover
+   * pattern). Omit if unknown; the corresponding rule field then simply never fires — Protegey
+   * never guesses this. ISO 8601. */
+  lastPasswordChangeAt?: string;
+  /** Same idea as `lastPasswordChangeAt`, for the account's registered email address. */
+  lastEmailChangeAt?: string;
+  /** Same idea as `lastPasswordChangeAt`, for the account's registered phone number — also
+   * covers a SIM swap for telcos, which is the same signal from your point of view. */
+  lastPhoneChangeAt?: string;
 }
 
 export interface Alert {
