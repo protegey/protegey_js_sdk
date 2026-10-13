@@ -92,6 +92,10 @@ export interface ReportTransactionInput {
   /** Same idea as `lastPasswordChangeAt`, for the account's registered phone number — also
    * covers a SIM swap for telcos, which is the same signal from your point of view. */
   lastPhoneChangeAt?: string;
+  /** The account's balance immediately before this transaction, if you track it — lets a Pan
+   * Studio rule flag a withdrawal/transfer that drains most of the balance (a classic mule-
+   * account/account-drain signal). Only meaningful for a DEBIT. Omit if unknown. */
+  accountBalanceBefore?: number;
 }
 
 export interface Alert {
