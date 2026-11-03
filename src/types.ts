@@ -58,6 +58,11 @@ export type TransactionChannel = 'branch' | 'atm' | 'pos' | 'online' | 'mobile_a
 export interface ReportTransactionInput {
   externalTransactionId: string;
   externalCustomerId: string;
+  /** The customer's display name, as you know it — self-declared, never verified by Protegey
+   * (same trust model as `isPep`). Shows up directly in the Pan Studio transactions table. Omit
+   * to reuse whatever name you sent on a previous transaction for this customer — once sent,
+   * it's remembered and keeps showing on their later transactions too. */
+  customerName?: string;
   direction: TransactionDirection;
   amount: number;
   currency?: string;
@@ -124,6 +129,13 @@ export interface StartKycSessionResult {
   url: string;
 }
 
+/** 'SUCCESS' = confident match, auto-approved. 'MANUAL' = FaceTec's hard checks (liveness, ID
+ * scan) passed but the match confidence was below the configurable auto-approve threshold (80%
+ * by default) — a human needs to review it; reported as session status 'In Review'. 'FAILED' = a
+ * hard check itself failed (liveness never proven, ID scan failed, or no face match at all);
+ * reported as session status 'Declined'. `null` before a FaceTec result has come back yet. */
+export type KycOutcome = 'SUCCESS' | 'MANUAL' | 'FAILED' | null;
+
 /** Same shape as the outbound KYC webhook payload, minus eventId — use this to poll a session's
  * current status as a fallback: webhook delivery is best-effort (one retry, no queue), so this is
  * the only way to be certain of a session's status if a delivery is ever lost. */
@@ -131,6 +143,8 @@ export interface KycSessionStatus {
   sessionId: string;
   externalUserId: string | null;
   status: string;
+  /** Typed convenience mirror of decision.outcome — see KycOutcome. */
+  outcome: KycOutcome;
   decision: Record<string, unknown> | null;
 }
 
