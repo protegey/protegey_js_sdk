@@ -25,7 +25,8 @@ export interface DeviceAttributes {
   totalMemoryMb?: number;
 }
 
-export type DeviceAction = 'allow' | 'soft_challenge' | 'hard_challenge' | 'block';
+/** UPPER_SNAKE_CASE on the wire since the partner-api UPPERCASE rollout (2026-11-14). */
+export type DeviceAction = 'ALLOW' | 'SOFT_CHALLENGE' | 'HARD_CHALLENGE' | 'BLOCK';
 
 export interface IdentifyInput {
   /** Your own customer identifier — omit only for a signal you can't yet attach to a known customer. */
@@ -112,7 +113,8 @@ export interface Alert {
 
 export interface ReportTransactionResult {
   transactionId: string;
-  decision: 'clear' | 'review' | 'blocked';
+  /** UPPER_SNAKE_CASE on the wire since the partner-api UPPERCASE rollout (2026-11-14). */
+  decision: 'CLEAR' | 'REVIEW' | 'BLOCKED';
   riskScore: number;
   alerts: Alert[];
   deviceAction: DeviceAction | null;
@@ -131,9 +133,9 @@ export interface StartKycSessionResult {
 
 /** 'SUCCESS' = confident match, auto-approved. 'MANUAL' = FaceTec's hard checks (liveness, ID
  * scan) passed but the match confidence was below the configurable auto-approve threshold (80%
- * by default) — a human needs to review it; reported as session status 'In Review'. 'FAILED' = a
+ * by default) — a human needs to review it; reported as session status 'IN_REVIEW'. 'FAILED' = a
  * hard check itself failed (liveness never proven, ID scan failed, or no face match at all);
- * reported as session status 'Declined'. `null` before a FaceTec result has come back yet. */
+ * reported as session status 'DECLINED'. `null` before a FaceTec result has come back yet. */
 export type KycOutcome = 'SUCCESS' | 'MANUAL' | 'FAILED' | null;
 
 /** Same shape as the outbound KYC webhook payload, minus eventId — use this to poll a session's
@@ -185,11 +187,12 @@ export interface ReportBehavioralEventInput {
   session?: SessionMetrics;
 }
 
-export type BehavioralConfidenceTier = 'low' | 'medium' | 'high';
+/** UPPER_SNAKE_CASE on the wire since the partner-api UPPERCASE rollout (2026-11-14). */
+export type BehavioralConfidenceTier = 'LOW' | 'MEDIUM' | 'HIGH';
 
 export interface ReportBehavioralEventResult {
-  /** "learning": not enough history for this customer yet — no score, keep sending sessions. */
-  status: 'learning' | 'scored';
+  /** "LEARNING": not enough history for this customer yet — no score, keep sending sessions. */
+  status: 'LEARNING' | 'SCORED';
   deviationScore: number;
   confidenceTier: BehavioralConfidenceTier | null;
   stepUpRecommended: boolean;

@@ -28,7 +28,7 @@ describe('ProtegeyHttpClient', () => {
   });
 
   it('sends a GET request with the api key header and no body', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ status: 'Approved' }), { status: 200 }));
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ status: 'APPROVED' }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
     const client = new ProtegeyHttpClient('secret-key', 'https://api.example.com');
@@ -39,7 +39,7 @@ describe('ProtegeyHttpClient', () => {
     expect(init.method).toBe('GET');
     expect(init.body).toBeUndefined();
     expect((init.headers as Record<string, string>)['x-api-key']).toBe('secret-key');
-    expect(result).toEqual({ status: 'Approved' });
+    expect(result).toEqual({ status: 'APPROVED' });
   });
 
   it('strips a trailing slash from a custom baseUrl', async () => {

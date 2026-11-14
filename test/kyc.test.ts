@@ -27,13 +27,13 @@ describe('KycModule.startSession', () => {
 
 describe('KycModule.getSession', () => {
   it('GETs /partner-api/kyc/sessions/:sessionId — the webhook polling fallback', async () => {
-    const http = buildHttp(undefined, { sessionId: 'sess_1', externalUserId: 'cust-1', status: 'Approved', decision: null });
+    const http = buildHttp(undefined, { sessionId: 'sess_1', externalUserId: 'cust-1', status: 'APPROVED', decision: null });
     const kyc = new KycModule(http as never);
 
     const result = await kyc.getSession('sess_1');
 
     expect(http.get).toHaveBeenCalledWith('/partner-api/kyc/sessions/sess_1');
-    expect(result.status).toBe('Approved');
+    expect(result.status).toBe('APPROVED');
   });
 
   it('URL-encodes the sessionId', async () => {
