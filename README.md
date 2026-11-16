@@ -63,7 +63,7 @@ const behavioral = await protegey.behavioral.report({
   touch: { avgSwipeVelocity: 22, scrollBehaviorScore: 0.8 },
   navigation: { screenSequence: ["login", "dashboard", "transfer", "confirm"] },
 });
-// behavioral.status === "learning" for the first few sessions of any given customer — expected, not an error.
+// behavioral.status === "LEARNING" for the first few sessions of any given customer — expected, not an error.
 // Once scored: behavioral.stepUpRecommended tells you whether to challenge this user yourself (OTP, biometric, ...).
 ```
 
@@ -86,10 +86,10 @@ on React Native, or generate once per server-side account), pass it explicitly:
 await protegey.device.identify({ visitorId: myStoredDeviceId, externalCustomerId: "cust-9981" });
 ```
 
-## What's in v0.1
+## What's in v0.6
 
 - `protegey.device.identify()` — device/session intelligence.
-- `protegey.transactions.report()` — transaction monitoring.
+- `protegey.transactions.report()` — transaction monitoring, including channel/counterparty/credential-change/account-balance context for Pan Studio rules.
 - `protegey.kyc.startSession()` / `protegey.kyc.getSession()` — identity verification + webhook-polling fallback.
 - `protegey.behavioral.report()` — behavioral biometrics (keystroke/touch/navigation/session).
 

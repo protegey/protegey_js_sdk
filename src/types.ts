@@ -1,5 +1,5 @@
 /** Mirrors the backend's DeviceAttributesDto — a closed, all-optional list. Keep in sync with
- * protegey-backend/src/keverd/dto/device-attributes.dto.ts. */
+ * protegey-backend/src/device-intelligence/dto/device-attributes.dto.ts. */
 export interface DeviceAttributes {
   platform?: string;
   osVersion?: string;
@@ -12,10 +12,12 @@ export interface DeviceAttributes {
   appVersion?: string;
   isRooted?: boolean;
   isEmulator?: boolean;
-  // ── Tier 1/2 enrichment — web-realistic subset only ────────────────────────────────────────
-  // manufacturer, storage, battery and VPN status are deliberately NOT collected here: none of
-  // them are reliably (or, for battery, even currently) available from a browser — see
-  // fingerprint.ts for exactly why each field below is (or isn't) populated per browser.
+  // ── Tier 1/2 enrichment ─────────────────────────────────────────────────────────────────────
+  // fingerprint.ts (the browser fingerprint path) only ever populates the fields below this
+  // comment up to totalMemoryMb — see that file for exactly why each one is (or isn't) available
+  // per browser. manufacturer/storage/battery/VPN are NOT populated by fingerprint.ts (none are
+  // reliably available to a browser), but are real fields a native/React Native caller can fill
+  // in from the platform's own device-info APIs — left optional here for that reason.
   /** Best-effort, Chromium-only (Network Information API) — undefined on Safari/Firefox. */
   connectionType?: string;
   devicePixelRatio?: number;
@@ -23,6 +25,18 @@ export interface DeviceAttributes {
   cpuCores?: number;
   /** From navigator.deviceMemory (GB, rounded down) — Chromium-only, undefined elsewhere. */
   totalMemoryMb?: number;
+  /** Native/React Native only — not populated by the browser fingerprint path. */
+  manufacturer?: string;
+  /** Native/React Native only — not populated by the browser fingerprint path. */
+  totalStorageMb?: number;
+  /** Native/React Native only — not populated by the browser fingerprint path. */
+  freeStorageMb?: number;
+  /** 0-100. Native/React Native only — not populated by the browser fingerprint path. */
+  batteryLevel?: number;
+  /** Native/React Native only — not populated by the browser fingerprint path. */
+  isCharging?: boolean;
+  /** Native/React Native only — not populated by the browser fingerprint path. */
+  isVpnActive?: boolean;
 }
 
 /** UPPER_SNAKE_CASE on the wire since the partner-api UPPERCASE rollout (2026-11-14). */
@@ -52,6 +66,9 @@ export interface IdentifyResult {
 
 export type TransactionDirection = 'DEBIT' | 'CREDIT';
 
+/** Mirrors the backend's CustomerSegment enum (protegey-backend/src/monitoring/enums/customer-segment.enum.ts). */
+export type CustomerSegment = 'KYC1' | 'KYC2' | 'AGENT' | 'SUPER_AGENT' | 'MERCHANT' | 'CORPORATE';
+
 /** How the transaction was initiated — lets a Pan Studio rule distinguish e.g. a USSD cash-out
  * from an API-initiated transfer. Omit if not meaningful for your integration. */
 export type TransactionChannel = 'branch' | 'atm' | 'pos' | 'online' | 'mobile_app' | 'ussd' | 'agent' | 'api' | 'call_center';
@@ -80,7 +97,7 @@ export interface ReportTransactionInput {
   isCash?: boolean;
   /** Defaults to now. */
   occurredAt?: string;
-  segment?: string;
+  segment?: CustomerSegment;
   country?: string;
   isPep?: boolean;
   /** Same device-intelligence fields as `identify()` — pass them here too and Protegey folds
@@ -123,6 +140,10 @@ export interface ReportTransactionResult {
 export interface StartKycSessionInput {
   /** Your own identifier for the end user going through verification. */
   externalUserId: string;
+  /** Optional — feeds Protegey's cross-partner identity-resolution matching alongside `externalUserId`. */
+  email?: string;
+  /** Optional — same purpose as `email`, for cross-partner identity-resolution matching. */
+  phone?: string;
 }
 
 export interface StartKycSessionResult {
@@ -138,9 +159,13 @@ export interface StartKycSessionResult {
  * reported as session status 'DECLINED'. `null` before a FaceTec result has come back yet. */
 export type KycOutcome = 'SUCCESS' | 'MANUAL' | 'FAILED' | null;
 
-/** Same shape as the outbound KYC webhook payload, minus eventId — use this to poll a session's
+/** Response shape of GET /partner-api/kyc/sessions/:sessionId — NOT the same shape as the
+ * outbound KYC webhook payload. The webhook (`kyc.status_changed`) only ever sends
+ * `{ type, eventId, externalUserId, status, sessionId, decision }` — no top-level `outcome` and
+ * none of the identity/biometric fields below. Use this richer GET response to poll a session's
  * current status as a fallback: webhook delivery is best-effort (one retry, no queue), so this is
- * the only way to be certain of a session's status if a delivery is ever lost. */
+ * the only way to be certain of a session's status (or to get at these fields at all) if a
+ * delivery is ever lost. */
 export interface KycSessionStatus {
   sessionId: string;
   externalUserId: string | null;
@@ -148,6 +173,21 @@ export interface KycSessionStatus {
   /** Typed convenience mirror of decision.outcome — see KycOutcome. */
   outcome: KycOutcome;
   decision: Record<string, unknown> | null;
+  fullName: string | null;
+  documentType: string | null;
+  country: string | null;
+  /** FaceTec liveness confidence. */
+  livenessScore: number | null;
+  /** FaceTec selfie-to-document face-match confidence. */
+  faceMatchScore: number | null;
+  /** Base64-encoded image, or null if not (yet) captured. */
+  documentPhoto: string | null;
+  /** Base64-encoded image — only populated for a document type FaceTec scans a back side for. */
+  documentBackPhoto: string | null;
+  /** Base64-encoded image, or null if not (yet) captured. */
+  selfiePhoto: string | null;
+  /** Base64-encoded image — the face crop FaceTec matched against `selfiePhoto`. */
+  documentFaceCrop: string | null;
 }
 
 /** Aggregated timing/gesture metadata only — never raw keystrokes/content. All fields optional:

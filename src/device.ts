@@ -15,7 +15,7 @@ export class DeviceModule {
   /**
    * Computes a device/session fingerprint (real browser fingerprinting when running in a
    * browser; pass your own `visitorId` when calling from Node.js or React Native, where there's
-   * no DOM to fingerprint) and reports it to Protegey — replaces what a Keverd SDK call used to do.
+   * no DOM to fingerprint) and reports it to Protegey.
    */
   async identify(input: IdentifyInput = {}): Promise<IdentifyResult> {
     const computed = input.visitorId ? { visitorId: input.visitorId, attributes: {} } : await computeFingerprint();

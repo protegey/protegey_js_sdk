@@ -49,6 +49,7 @@ export type {
   ReportTransactionResult,
   TransactionDirection,
   TransactionChannel,
+  CustomerSegment,
   ProtegeyOptions,
   Alert,
   StartKycSessionInput,

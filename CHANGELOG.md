@@ -1,3 +1,11 @@
+## 0.6.0
+
+- `StartKycSessionInput` gains `email` and `phone` — both optional, feed Protegey's cross-partner identity-resolution matching alongside `externalUserId`.
+- `KycSessionStatus` (the `kyc.getSession()` response) gains `fullName`, `documentType`, `country`, `livenessScore`, `faceMatchScore`, `documentPhoto`, `documentBackPhoto`, `selfiePhoto`, `documentFaceCrop` — these were already returned by the backend but missing from the type. Also corrected its doc comment: this is the GET-response shape, not the same shape as the outbound `kyc.status_changed` webhook payload (the webhook's payload is narrower and has no top-level `outcome`).
+- `ReportTransactionInput.segment` is now typed against the new exported `CustomerSegment` union (`'KYC1' | 'KYC2' | 'AGENT' | 'SUPER_AGENT' | 'MERCHANT' | 'CORPORATE'`) instead of a loose `string`.
+- `DeviceAttributes` gains `manufacturer`, `totalStorageMb`, `freeStorageMb`, `batteryLevel`, `isCharging`, `isVpnActive` — all optional. The browser fingerprint path still doesn't populate these (no browser API backs them reliably), but native/React Native callers can now fill them in from platform device-info APIs.
+- Fixed a stale doc comment pointing at a nonexistent `protegey-backend/src/keverd/...` path — corrected to `protegey-backend/src/device-intelligence/dto/device-attributes.dto.ts`.
+
 ## 0.5.0
 
 - `ReportTransactionInput` gains `customerName` — shows up directly in the Pan Studio transactions table instead of just the opaque `externalCustomerId`. Self-declared, never verified by Protegey. Send it once and it's remembered on this customer's later transactions too, even if you omit it on some of them.
