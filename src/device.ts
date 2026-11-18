@@ -21,7 +21,7 @@ export class DeviceModule {
     const computed = input.visitorId ? { visitorId: input.visitorId, attributes: {} } : await computeFingerprint();
     const attributes = { ...computed.attributes, ...input.deviceAttributes };
 
-    const result = await this.http.post<{ recorded: boolean; action: IdentifyResult['action']; riskScore: number | null }>(
+    const result = await this.http.post<Omit<IdentifyResult, 'visitorId'>>(
       '/partner-api/device-events',
       {
         eventId: input.eventId ?? randomEventId(),

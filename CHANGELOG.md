@@ -1,3 +1,25 @@
+## 0.7.0
+
+Brings the SDK in line with the current partner API (all 23 endpoints). Contains breaking type changes (see below).
+
+**New endpoints**
+- `protegey.alerts` (new namespace): `list()`, `get()`, `update()`, `flagTransaction()`, `convertToCase()`. The `status`/`disposition` list filters take the UPPERCASE values and are sent lowercase, as the API requires.
+- `protegey.kyb` (new namespace): `listApplicants()`, `getApplicant()`, `inviteApplicant()`, `resendInvitation()`, `screenApplicant()`, `decide()`. Invites take `contactEmail` and/or `contactPhone` (at least one, enforced in the type). Invite, resend and decide (REQUEST_MORE_INFO only) return `applicationUrl`. `resendInvitation()` returns the submission, not the business. The leaked internal fields `tokenHash` and `documentFilePath` are deliberately not modelled.
+- `protegey.kyc`: `listSessions()` (the UPPERCASE `status` filter is converted to the Title Case value the API requires), `updateSession()` (PATCH, manual status override), `resendSession()`.
+- `protegey.transactions`: `list()` and `get()` (by Protegey or external id).
+- `protegey.sanctions.screen()` and `protegey.sharedSignals.check()` (with `governmentId` / `personIdentityId`; result has `flagConfidence`, `matchCount` and `matches: [{ category, reportedDaysAgo }]`).
+- Webhooks: `verifyWebhookSignature()` / `constructWebhookEvent()` (HMAC-SHA256 hex over `{X-Timestamp}.{rawBody}`, 5-minute replay window) and a `WebhookEvent` union typing all six events (`kyc.status_changed`, `kyb.status_changed`, `alert.created`, `alert.status_changed`, `transaction.blocked`, `webhook.test`).
+
+**Breaking type changes**
+- `Alert` is now the exact alert record (no `[key: string]: unknown` index signature); `status` is `AlertStatus`, plus typed `decisionVerdict`, `disposition`, etc. `ReportTransactionResult.alerts` is `Array<Alert | AlertWithContext>`.
+- `KycSessionStatus.status` is now the `KycStatus` union (was `string`); `decision` is the typed `KycDecision` (was `Record<string, unknown>`).
+- `IdentifyResult.action` / `riskScore` are no longer nullable (the API always returns them).
+- All types are now re-exported from the package root (`export type *`).
+
+**Other**
+- `ProtegeyApiError` gains `errorCode` (`PARTNER_SUSPENDED`, `PARTNER_CONTRACT_REQUIRED`) and the raw `body`.
+- Docs: webhook delivery is retried up to 5 times over ~3 hours (the old "one retry, no queue" note was wrong); sandbox quotas documented.
+
 ## 0.6.0
 
 - `StartKycSessionInput` gains `email` and `phone` — both optional, feed Protegey's cross-partner identity-resolution matching alongside `externalUserId`.

@@ -1,7 +1,7 @@
 {
   "name": "@protegey/sdk",
-  "version": "0.6.0",
-  "description": "Official Protegey SDK for JavaScript/TypeScript — device intelligence and transaction reporting from Node.js, the browser, React, Angular and React Native.",
+  "version": "0.7.0",
+  "description": "Official Protegey SDK for JavaScript/TypeScript — the full partner API (device intelligence, transactions, alerts, KYC, KYB, sanctions, shared signals, behavioral, webhooks) from Node.js, the browser, React, Angular and React Native.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

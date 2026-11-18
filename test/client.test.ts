@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ProtegeyHttpClient } from '../src/client.js';
+import { ProtegeyApiError, ProtegeyHttpClient, withQuery } from '../src/client.js';
 
 describe('ProtegeyHttpClient', () => {
   afterEach(() => {
@@ -81,5 +81,38 @@ describe('ProtegeyHttpClient', () => {
 
     const client = new ProtegeyHttpClient('key', 'https://api.example.com');
     await expect(client.post('/foo', {})).rejects.toThrow('Internal Server Error');
+  });
+});
+
+describe('ProtegeyHttpClient.patch / withQuery', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sends a PATCH with a JSON body and the api key header', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await new ProtegeyHttpClient('key', 'https://api.example.com').patch('/foo', { a: 1 });
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(init.method).toBe('PATCH');
+    expect(init.body).toBe('{"a":1}');
+    expect((init.headers as Record<string, string>)['x-api-key']).toBe('key');
+  });
+
+  it('withQuery skips undefined/null values and encodes the rest', () => {
+    expect(withQuery('/x', { a: 'b c', n: 2, u: undefined, z: null })).toBe('/x?a=b+c&n=2');
+    expect(withQuery('/x', {})).toBe('/x');
+  });
+
+  it('exposes errorCode and the raw body on ProtegeyApiError', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ errorCode: 'PARTNER_CONTRACT_REQUIRED', message: 'No contract' }), { status: 403 })),
+    );
+    const error = await new ProtegeyHttpClient('key', 'https://api.example.com').post('/foo', {}).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ProtegeyApiError);
+    expect(error).toMatchObject({ status: 403, errorCode: 'PARTNER_CONTRACT_REQUIRED', body: { message: 'No contract' } });
   });
 });
