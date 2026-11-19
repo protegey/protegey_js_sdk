@@ -11,9 +11,9 @@ import type {
   UpdateKycSessionResult,
 } from './types.js';
 
-/** The KYC list `status` filter only accepts the backend's internal Title Case values on the wire
- * (`?status=IN_REVIEW` is rejected with 400) — callers pass the UPPERCASE value they get back in
- * responses, and this converts it. */
+/** The KYC list `status` filter is sent in the backend's canonical Title Case form ("In Review").
+ * Current backends accept any casing, but older ones rejected `?status=IN_REVIEW` with 400 —
+ * callers pass the UPPERCASE value they get back in responses, and this converts it. */
 const KYC_STATUS_FILTER: Record<KycStatus, string> = {
   NOT_STARTED: 'Not Started',
   IN_PROGRESS: 'In Progress',
@@ -40,7 +40,9 @@ export class KycModule {
     return this.http.post<StartKycSessionResult>('/partner-api/kyc/sessions', input);
   }
 
-  /** Lists your KYC sessions, newest first. */
+  /** Lists your KYC sessions, newest first. Filter by `externalUserId` (exact match) to find a
+   * given customer's sessions. Each row carries `recommendation` and pre-signed `images` links
+   * (valid 1 hour, re-issued on every call). */
   async listSessions(query: ListKycSessionsQuery = {}): Promise<Paginated<KycSessionSummary>> {
     const { status, ...rest } = query;
     return this.http.get<Paginated<KycSessionSummary>>(
@@ -48,14 +50,18 @@ export class KycModule {
     );
   }
 
-  /** Full session detail, including the decision and photos. Also the polling fallback for the
-   * `kyc.status_changed` webhook. `sessionId` is the value returned by startSession(). */
+  /** Full session detail: status, Protegey's `recommendation`, the decision, and the photos — as
+   * pre-signed `images` links (valid 1 hour, re-issued on every GET: download within the hour) and
+   * as legacy base64 fields. Also the polling fallback for the `kyc.status_changed` webhook.
+   * `sessionId` is the value returned by startSession() (and carried by the webhook). */
   async getSession(sessionId: string): Promise<KycSessionStatus> {
     return this.http.get<KycSessionStatus>(sessionPath(sessionId));
   }
 
   /** Corrects identity fields and/or overrides the status (APPROVED / DECLINED / IN_REVIEW) after
-   * a manual review. The override is recorded in `decision.manualReview`; no webhook fires. */
+   * a manual review, with an optional `reviewNote`. The override is recorded in
+   * `decision.manualReview` (`recommendation` is left unchanged), and a status change fires the
+   * `kyc.status_changed` webhook. */
   async updateSession(sessionId: string, input: UpdateKycSessionInput): Promise<UpdateKycSessionResult> {
     return this.http.patch<UpdateKycSessionResult>(sessionPath(sessionId), input);
   }

@@ -1,6 +1,6 @@
 # @protegey/sdk
 
-Official Protegey SDK for JavaScript/TypeScript. One package for Node.js, the browser (React, Angular, plain JS), and React Native — device intelligence, transaction reporting, identity verification and behavioral biometrics, called directly from your app with your own API key.
+Official Protegey SDK for JavaScript/TypeScript. One package for Node.js, the browser (React, Angular, plain JS), and React Native — device intelligence, transaction and cash-deposit reporting, identity verification and behavioral biometrics, called directly from your app with your own API key.
 
 ## Install
 
@@ -50,6 +50,21 @@ const page = await protegey.transactions.list({ decision: "BLOCKED", page: 1, li
 const tx = await protegey.transactions.get("tx-00234"); // Protegey id or your own externalTransactionId
 // Note: `amount` is a decimal string ("250000.00") in list results.
 
+// Cash deposits — record the cash taken at your branches/agents; same rules and alerts as transactions
+const deposit = await protegey.cashDeposits.record({
+  externalTransactionId: "dep-0001", // optional (generated when omitted) — send yours: a re-send is a 409
+  externalCustomerId: "cust-9981",
+  amount: 2500000,
+  currency: "XOF", // required, ISO 4217
+  channel: "BRANCH",
+  branchId: "DKR-PLATEAU",
+  depositorName: "Awa Diallo", // who physically brought the cash, if not the account holder
+});
+// deposit.decision: "CLEAR" | "REVIEW" | "BLOCKED"; deposit.alerts
+const deposits = await protegey.cashDeposits.list({ dateFrom: "2026-11-01", minAmount: 1000000, channel: "BRANCH", limit: 100 });
+const one = await protegey.cashDeposits.get("dep-0001"); // Protegey cashDepositId or your externalTransactionId; includes alerts
+// Note: `amount` is a decimal string ("2500000.00") in list/get results.
+
 // Alerts — triage from your own back office
 const open = await protegey.alerts.list({ status: "OPEN" }); // pass UPPERCASE; the SDK sends the casing the API expects
 await protegey.alerts.update(open.data[0].id, { status: "CONFIRMED", disposition: "CONFIRMED_FRAUD" });
@@ -61,9 +76,14 @@ const { sessionId, url: verificationUrl } = await protegey.kyc.startSession({
   externalUserId: "cust-9981",
   phone: "+22890000001", // optional, as is `email`
 });
-const current = await protegey.kyc.getSession(sessionId); // status, outcome, decision, photos
+const current = await protegey.kyc.getSession(sessionId); // status, outcome, recommendation, decision, photos
+// current.status is the final decision; current.recommendation is Protegey's own verdict (APPROVE | REVIEW | REJECT | null),
+// unchanged by a manual override.
+// current.images.{documentFront, documentBack, selfie, documentFaceCrop}: { url, expiresAt } | null — pre-signed links
+// valid ONE HOUR, re-issued on every GET. Download within the hour; call getSession() again for fresh links, never store them.
 await protegey.kyc.listSessions({ status: "IN_REVIEW" });
-await protegey.kyc.updateSession(sessionId, { status: "APPROVED", reviewNote: "Document checked by hand" });
+const forCustomer = await protegey.kyc.listSessions({ externalUserId: "cust-9981" }); // exact match; rows carry recommendation + images
+await protegey.kyc.updateSession(sessionId, { status: "APPROVED", reviewNote: "Document checked by hand" }); // fires kyc.status_changed
 const { url: freshLink } = await protegey.kyc.resendSession(sessionId); // new 30-minute link
 
 // Business onboarding (KYB) — invite by email and/or phone (at least one)
@@ -100,13 +120,13 @@ const behavioral = await protegey.behavioral.report({
 Every non-2xx response throws `ProtegeyApiError` with `status`, `message` (validation messages
 joined with ", "), `errorCode` and the raw `body`. `errorCode` is set for the account-gating 403s:
 `PARTNER_SUSPENDED` and `PARTNER_CONTRACT_REQUIRED` (both only block write calls; reads keep
-working). A duplicate `externalTransactionId` is a 409.
+working). A duplicate `externalTransactionId` (transaction or cash deposit) is a 409.
 
 ## Sandbox vs live
 
 There's no flag to set: the API key you pass decides. Your sandbox key sees only sandbox KYC
-sessions, transactions and alerts, and is limited to 100 transactions and 10 KYC sessions per day
-(UTC). KYB, sanctions screening and alert updates are not split by mode.
+sessions, transactions, cash deposits and alerts, and is limited to 100 transactions (cash
+deposits included) and 10 KYC sessions per day (UTC). KYB, sanctions screening and alert updates are not split by mode.
 
 ## Webhooks
 
@@ -132,8 +152,8 @@ app.post("/webhooks/protegey", express.raw({ type: "application/json" }), async 
   }
   // Deduplicate on event.eventId — failed deliveries are retried up to 5 times over ~3 hours.
   switch (event.type) {
-    case "kyc.status_changed": /* event.status: APPROVED | IN_REVIEW | DECLINED; correlate on event.externalUserId */ break;
-    case "kyb.status_changed": /* event.clientId, event.status, event.decision */ break;
+    case "kyc.status_changed": /* event.sessionId (= startSession's), event.status: APPROVED | IN_REVIEW | DECLINED, event.recommendation */ break;
+    case "kyb.status_changed": /* event.clientId, event.status, event.submissionStatus (UPPER_SNAKE), event.decision */ break;
     case "alert.created":
     case "alert.status_changed": /* event.alertId, event.status */ break;
     case "transaction.blocked": /* event.transactionId, event.amount (a number here) */ break;
@@ -144,8 +164,14 @@ app.post("/webhooks/protegey", express.raw({ type: "application/json" }), async 
 ```
 
 `verifyWebhookSignature()` returns a boolean instead of throwing. Both reject deliveries whose
-timestamp is more than 5 minutes off (`toleranceSeconds` to change). Note that
-`kyc.status_changed.sessionId` is always null for FaceTec sessions — correlate on `externalUserId`.
+timestamp is more than 5 minutes off (`toleranceSeconds` to change).
+
+`kyc.status_changed` fires on an automated result **and** on a manual status change (portal or
+`kyc.updateSession()`). Its `sessionId` is the same id `startSession()` returned, and it carries
+`recommendation` (Protegey's verdict) next to `status` (the final decision). Every status-like
+field is UPPER_SNAKE_CASE, including `kyb.status_changed.submissionStatus` and
+`decision.manualReview.previousStatus` / `newStatus`. Failed deliveries are retried up to 5 times
+over ~3 hours with the same `eventId` — deduplicate on it.
 
 ## `baseUrl` — no default, on purpose
 
@@ -166,12 +192,13 @@ on React Native, or generate once per server-side account), pass it explicitly:
 await protegey.device.identify({ visitorId: myStoredDeviceId, externalCustomerId: "cust-9981" });
 ```
 
-## What's in v0.7
+## What's in v0.8
 
-The full partner API (all 23 endpoints):
+The full partner API (all 26 endpoints):
 
 - `protegey.device.identify()` — device/session intelligence.
 - `protegey.transactions.report()` / `.list()` / `.get()` — transaction monitoring.
+- `protegey.cashDeposits.record()` / `.list()` / `.get()` — cash deposits.
 - `protegey.alerts.list()` / `.get()` / `.update()` / `.flagTransaction()` / `.convertToCase()` — alert triage.
 - `protegey.kyc.startSession()` / `.listSessions()` / `.getSession()` / `.updateSession()` / `.resendSession()` — identity verification.
 - `protegey.kyb.inviteApplicant()` / `.listApplicants()` / `.getApplicant()` / `.resendInvitation()` / `.screenApplicant()` / `.decide()` — business onboarding.

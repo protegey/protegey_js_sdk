@@ -1,3 +1,22 @@
+## 0.8.0
+
+Brings the SDK in line with the November 2026 partner API.
+
+**New endpoints**
+- `protegey.cashDeposits` (new namespace): `record()` (POST `/partner-api/cash-deposits`), `list()` (filters `dateFrom`, `dateTo`, `externalCustomerId`, `minAmount`, `maxAmount`, `currency`, `channel`, `decision`, `branchId`, `agentId`, `page`, `limit` ≤ 100) and `get()` (by `cashDepositId` or your `externalTransactionId`, with its alerts). A duplicate `externalTransactionId` throws a 409 `ProtegeyApiError`. `amount` is a decimal string in `list()`/`get()` results. New types: `RecordCashDepositInput`, `RecordCashDepositResult`, `ListCashDepositsQuery`, `CashDeposit`, `CashDepositDetail`, `CashDepositChannel`.
+
+**KYC**
+- `recommendation` (`KycRecommendation`: `APPROVE` | `REVIEW` | `REJECT` | `null`) on `listSessions()` rows, `getSession()`, `updateSession()` and the `kyc.status_changed` webhook — Protegey's own verdict, unchanged by a manual override (`status` is the final decision).
+- `images` (`KycSessionImages`: `documentFront`, `documentBack`, `selfie`, `documentFaceCrop`, each `{ url, expiresAt } | null`) on `listSessions()` rows and `getSession()`. Pre-signed URLs valid **1 hour**, re-issued on every GET — download within the hour, never store the URL. The base64 photo fields remain on `getSession()`.
+- `listSessions({ externalUserId })` — exact (case-sensitive) lookup of a customer's sessions.
+- `updateSession()` docs: a status change now fires `kyc.status_changed`.
+
+**Webhooks (type/doc fixes)**
+- `kyc.status_changed`: `sessionId` is now the session id `startSession()` returned (typed `string`, was documented as always `null`); also sent on manual status changes; carries `recommendation`.
+- `kyb.status_changed.submissionStatus` is now UPPER_SNAKE_CASE (`APPROVED` | `REJECTED` | `MORE_INFO_REQUIRED`).
+- `KycManualReview.previousStatus` / `newStatus` are UPPER_SNAKE_CASE (typed `KycStatus` / `KycReviewStatus`).
+- Retries: up to 5 attempts over ~3 hours, same `eventId` — deduplicate on it. Signature verification is unchanged.
+
 ## 0.7.0
 
 Brings the SDK in line with the current partner API (all 23 endpoints). Contains breaking type changes (see below).

@@ -87,7 +87,8 @@ export async function verifyWebhookSignature(input: VerifyWebhookInput): Promise
 
 /** Verifies the delivery and parses it into a typed `WebhookEvent` — throws
  * `ProtegeyWebhookSignatureError` if it can't be trusted. Switch on `event.type`, and deduplicate
- * on `event.eventId` (retries resend the same event). */
+ * on `event.eventId` (a failed delivery is retried up to 5 times over ~3 hours with the same
+ * `eventId`). */
 export async function constructWebhookEvent(input: VerifyWebhookInput): Promise<WebhookEvent> {
   const failure = await check(input);
   if (failure) throw new ProtegeyWebhookSignatureError(failure);
