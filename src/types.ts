@@ -434,7 +434,7 @@ export interface ConvertAlertToCaseResult {
 
 // ─── KYC ─────────────────────────────────────────────────────────────────────────────────────────
 
-/** KYC session status. A FaceTec session is IN_PROGRESS at creation, then APPROVED / IN_REVIEW /
+/** KYC session status. A Protegey identity verification session is IN_PROGRESS at creation, then APPROVED / IN_REVIEW /
  * DECLINED, and RESUBMITTED after a resend. */
 export type KycStatus =
   | 'NOT_STARTED'
@@ -448,10 +448,10 @@ export type KycStatus =
   | 'EXPIRED'
   | 'KYC_EXPIRED';
 
-/** 'SUCCESS' = confident match, auto-approved. 'MANUAL' = FaceTec's hard checks (liveness, ID
+/** 'SUCCESS' = confident match, auto-approved. 'MANUAL' = the hard checks (liveness, ID
  * scan) passed but the match confidence was below the configurable auto-approve threshold — a
  * human needs to review it; reported as session status 'IN_REVIEW'. 'FAILED' = a hard check itself
- * failed; reported as session status 'DECLINED'. `null` before a FaceTec result has come back. */
+ * failed; reported as session status 'DECLINED'. `null` before a verification result has come back. */
 export type KycOutcome = 'SUCCESS' | 'MANUAL' | 'FAILED' | null;
 
 /** Protegey's own verdict on a session (APPROVE / REVIEW / REJECT). Set by the automated result
@@ -536,7 +536,8 @@ export interface KycManualReview {
 /** The verification decision blob — same shape in `getSession()` and the `kyc.status_changed`
  * webhook. */
 export interface KycDecision {
-  /** "facetec". */
+  /** Identifies the verification engine that produced the result (an opaque string — don't
+   * branch on its value). */
   source: string;
   outcome: KycOutcome;
   passed: boolean;
@@ -551,9 +552,9 @@ export interface KycDecision {
   riskFactors: Record<string, unknown>;
   /** Every other OCR'd document field (dateOfBirth, sex, placeOfBirth, …) — varies by document. */
   documentFields: Record<string, string>;
-  /** FaceTec's document authenticity/quality checks (MRZ/NFC/barcode status, …). */
+  /** Document authenticity/quality checks (MRZ/NFC/barcode status, …). */
   idScanChecks: Record<string, unknown> | null;
-  /** Verbatim FaceTec response (note: any status/outcome/action keys inside it are uppercased too). */
+  /** Verbatim verification-engine response (note: any status/outcome/action keys inside it are uppercased too). */
   rawResponse: Record<string, unknown>;
   /** Sanctions/PEP matches on the verified name — absent when screening didn't run. */
   sanctionsMatches?: SanctionsMatch[];
@@ -576,9 +577,9 @@ export interface KycSessionStatus {
   fullName: string | null;
   documentType: string | null;
   country: string | null;
-  /** FaceTec liveness confidence. */
+  /** Protegey liveness confidence. */
   livenessScore: number | null;
-  /** FaceTec selfie-to-document face-match confidence. */
+  /** Protegey selfie-to-document face-match confidence. */
   faceMatchScore: number | null;
   /** Pre-signed links to the photos — valid 1 hour, re-issued on every GET (download within the
    * hour; call `getSession()` again for fresh links). Preferred over the base64 fields below,
@@ -586,11 +587,11 @@ export interface KycSessionStatus {
   images: KycSessionImages;
   /** Base64 (no data: prefix), or null if not (yet) captured — photos can arrive ~2–3 min after the decision. */
   documentPhoto: string | null;
-  /** Base64 — only populated for a document type FaceTec scans a back side for. */
+  /** Base64 — only populated for a document type whose back side is scanned. */
   documentBackPhoto: string | null;
   /** Base64, or null if not (yet) captured. */
   selfiePhoto: string | null;
-  /** Base64 — the face crop FaceTec matched against `selfiePhoto`. */
+  /** Base64 — the face crop matched against `selfiePhoto`. */
   documentFaceCrop: string | null;
 }
 
