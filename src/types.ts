@@ -554,8 +554,8 @@ export interface KycDecision {
   documentFields: Record<string, string>;
   /** Document authenticity/quality checks (MRZ/NFC/barcode status, …). */
   idScanChecks: Record<string, unknown> | null;
-  /** Verbatim verification-engine response (note: any status/outcome/action keys inside it are uppercased too). */
-  rawResponse: Record<string, unknown>;
+  /** Sandbox only: the scenario that produced this result (e.g. "sandbox_approve"). Absent in live. */
+  sandboxScenario?: string;
   /** Sanctions/PEP matches on the verified name — absent when screening didn't run. */
   sanctionsMatches?: SanctionsMatch[];
   /** Present once a status was overridden via `kyc.updateSession()`. */
